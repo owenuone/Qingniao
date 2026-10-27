@@ -297,8 +297,12 @@ final class InputController: IMKInputController {
 
     private func render(_ client: IMKTextInput) {
         let text = composer.markedText
+        // 传纯字符串时部分 App（浏览器、Electron）会画成选中分段的蓝底，显式指定单下划线
+        let marked = NSAttributedString(string: text, attributes: [
+            .underlineStyle: NSUnderlineStyle.single.rawValue,
+        ])
         client.setMarkedText(
-            text,
+            marked,
             selectionRange: NSRange(location: (text as NSString).length, length: 0),
             replacementRange: Self.notFound
         )
