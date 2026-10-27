@@ -278,6 +278,7 @@ make test         # Swift Testing 单元测试（不要直接 swift test，CLT �
 - `client` 对象只在当前输入会话内有效，异步回调里提交文本前要确认会话未切换
 - 密码输入框（Secure Input）中系统会禁用第三方输入法，属正常行为
 - 日志用 `os.Logger`（subsystem = bundle ID），不要 `print`
+- 系统会缓存输入法图标：改 `icon.tiff` 后要把 `Info.plist` 的 `CFBundleVersion` 加 1 再 `make install`，必要时 `killall TextInputMenuAgent`，否则菜单栏仍显示旧图标
 
 ---
 
