@@ -34,10 +34,31 @@ final class CandidatePanel {
         panel.hasShadow = true
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
-        panel.contentView = view
+
+        // 用 maskImage 而不是 layer 圆角裁剪，窗口阴影才会跟随圆角
+        let background = NSVisualEffectView()
+        background.material = .popover
+        background.blendingMode = .behindWindow
+        background.state = .active
+        background.maskImage = Self.roundedMask(radius: CandidateView.cornerRadius)
+        view.autoresizingMask = [.width, .height]
+        background.addSubview(view)
+        panel.contentView = background
 
         view.onSelectCandidate = { [weak self] in self?.onSelectCandidate?($0) }
         view.onCommitTranslation = { [weak self] in self?.onCommitTranslation?() }
+    }
+
+    private static func roundedMask(radius: CGFloat) -> NSImage {
+        let edge = radius * 2 + 1
+        let mask = NSImage(size: NSSize(width: edge, height: edge), flipped: false) { rect in
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).fill()
+            return true
+        }
+        mask.capInsets = NSEdgeInsets(top: radius, left: radius, bottom: radius, right: radius)
+        mask.resizingMode = .stretch
+        return mask
     }
 
     func show(_ model: CandidatePanelModel, cursorRect: NSRect) {
@@ -98,6 +119,7 @@ private final class CandidateView: NSView {
         didSet { if hovered != oldValue { needsDisplay = true } }
     }
 
+    static let cornerRadius: CGFloat = 10
     private let padding: CGFloat = 6
     private let itemPadX: CGFloat = 8
     private let itemPadY: CGFloat = 4
@@ -167,11 +189,10 @@ private final class CandidateView: NSView {
     // MARK: 绘制
 
     override func draw(_ dirtyRect: NSRect) {
-        let background = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 10, yRadius: 10)
-        NSColor.windowBackgroundColor.setFill()
-        background.fill()
+        // 背景由父视图的毛玻璃提供，这里只描边，浅色背景上也能看清边界
+        let radius = Self.cornerRadius
         NSColor.separatorColor.setStroke()
-        background.stroke()
+        NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: radius, yRadius: radius).stroke()
 
         for (index, rect) in candidateRects.enumerated() {
             let highlighted = index == model.highlightedIndex
