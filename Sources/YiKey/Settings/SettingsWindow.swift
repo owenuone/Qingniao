@@ -59,6 +59,54 @@ private struct WindowBlur: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
+/// 系统设置风格的行标题：彩色圆角方块里放白色 SF Symbol
+private struct IconLabel: View {
+    let title: String
+    let symbol: String
+    let color: Color
+
+    init(_ title: String, symbol: String, color: Color) {
+        self.title = title
+        self.symbol = symbol
+        self.color = color
+    }
+
+    var body: some View {
+        Label {
+            Text(title)
+        } icon: {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 22, height: 22)
+                .background(color.gradient, in: RoundedRectangle(cornerRadius: 6))
+        }
+    }
+}
+
+/// 键帽样式的按键
+private struct KeyCaps: View {
+    let keys: [String]
+
+    init(_ keys: [String]) {
+        self.keys = keys
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(keys, id: \.self) { key in
+                Text(key)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
+                    .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.separator))
+            }
+        }
+    }
+}
+
 private struct SettingsView: View {
     private enum PackStatus {
         case checking, installed, missing, downloading
@@ -71,25 +119,33 @@ private struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section { header }
+
             Section("输入方案") {
-                Picker("中文输入", selection: $schemeID) {
+                Picker(selection: $schemeID) {
                     ForEach(Preferences.schemes, id: \.id) { scheme in
                         Text(scheme.name).tag(scheme.id)
                     }
+                } label: {
+                    IconLabel("中文输入", symbol: "keyboard", color: .blue)
                 }
                 .onChange(of: schemeID) { _, id in Preferences.schemeID = id }
             }
 
             Section {
-                Picker("外语", selection: $foreignLanguage) {
+                Picker(selection: $foreignLanguage) {
                     ForEach(Preferences.foreignLanguages, id: \.self) { code in
                         let name = Preferences.languageName(code)
                         Text(Preferences.latinLanguages.contains(code) ? name : "\(name)（仅 中文→外语）").tag(code)
                     }
+                } label: {
+                    IconLabel("外语", symbol: "globe", color: .green)
                 }
                 .onChange(of: foreignLanguage) { _, code in Preferences.foreignLanguage = code }
-                LabeledContent("中文 ⇄ \(Preferences.languageName(foreignLanguage))语言包") {
+                LabeledContent {
                     packStatusView
+                } label: {
+                    IconLabel("中文 ⇄ \(Preferences.languageName(foreignLanguage))语言包", symbol: "arrow.down.circle", color: .orange)
                 }
             } header: {
                 Text("翻译语言")
@@ -100,11 +156,11 @@ private struct SettingsView: View {
             }
 
             Section("快捷键") {
-                LabeledContent("Caps Lock", value: "灯灭 中文→外语 / 灯亮 外语→中文")
-                LabeledContent("单按 Shift", value: "切换直接英文")
-                LabeledContent("↓ / Tab", value: "选中译文行")
-                LabeledContent("← / →", value: "切换高亮候选")
-                LabeledContent("- / =", value: "翻页")
+                LabeledContent("切换方向（灯亮 = 外语→中文）") { KeyCaps(["⇪ Caps Lock"]) }
+                LabeledContent("切换直接英文（单按）") { KeyCaps(["⇧ Shift"]) }
+                LabeledContent("选中译文行") { KeyCaps(["↓", "Tab"]) }
+                LabeledContent("切换高亮候选") { KeyCaps(["←", "→"]) }
+                LabeledContent("翻页") { KeyCaps(["-", "="]) }
             }
         }
         .formStyle(.grouped)
@@ -123,6 +179,26 @@ private struct SettingsView: View {
             await refreshPackStatus()
         }
     }
+
+    private var header: some View {
+        HStack(spacing: 12) {
+            // 与菜单栏图标一致：实心圆、白字
+            Text("译")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(Color.accentColor.gradient, in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text("译键").font(.title2.bold())
+                Text("实时翻译输入法 · 版本 \(Self.version)")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private static let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
 
     @ViewBuilder
     private var packStatusView: some View {
