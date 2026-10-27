@@ -1,0 +1,12 @@
+# YiKey 对雾凇 default.yaml 的补丁：只部署用到的方案，每页 6 个候选
+patch:
+  schema_list:
+    - schema: rime_ice
+    - schema: double_pinyin_flypy
+    - schema: double_pinyin_mspy
+    - schema: double_pinyin
+    - schema: double_pinyin_sogou
+    - schema: double_pinyin_abc
+    - schema: double_pinyin_ziguang
+    - schema: double_pinyin_jiajia
+  menu/page_size: 6
