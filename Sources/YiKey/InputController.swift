@@ -101,11 +101,11 @@ final class InputController: IMKInputController {
             Self.directEnglish = false
             let direction = Self.currentDirection()
             switchDirection(to: direction, client: client)
-            panel.flash(direction.label, cursorRect: cursorRect(of: client))
+            panel.flash(direction.label, symbol: "translate", cursorRect: cursorRect(of: client))
         } else {
             if composer.isComposing { commit(composer.rawInput, to: client) }
             Self.directEnglish = true
-            panel.flash("英文", cursorRect: cursorRect(of: client))
+            panel.flash("英文", symbol: "keyboard", cursorRect: cursorRect(of: client))
         }
     }
 
@@ -115,7 +115,7 @@ final class InputController: IMKInputController {
         guard direction != composer.direction else { return true }
         if composer.isComposing { commit(composer.forceCommitText(), to: client) }
         switchDirection(to: direction, client: client)
-        panel.flash(direction.label, cursorRect: cursorRect(of: client))
+        panel.flash(direction.label, symbol: "translate", cursorRect: cursorRect(of: client))
         return true
     }
 
@@ -143,7 +143,7 @@ final class InputController: IMKInputController {
         }
         if composer.direction == .chineseToForeign, !RimeRuntime.shared.isReady,
            case let .character(c) = key, c.isASCII, c.isLetter {
-            panel.flash("词库部署中，请稍候…", cursorRect: cursorRect(of: client))
+            panel.flash("词库部署中，请稍候…", symbol: "hourglass", cursorRect: cursorRect(of: client))
             return true
         }
         return perform(composer.handle(key), client: client)

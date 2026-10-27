@@ -7,6 +7,8 @@ struct CandidatePanelModel {
     var focus: Focus = .candidates
     var translation = ""
     var translationDimmed = true
+    /// 提示（flash）左侧的 SF Symbol 名，只在提示时设置
+    var symbol: String?
 }
 
 /// 全局唯一的候选窗，不抢焦点；点击通过回调交给当前激活的 InputController。
@@ -86,8 +88,8 @@ final class CandidatePanel {
     }
 
     /// 短暂显示一条提示（如切换方向、词库部署中），1 秒后自动隐藏
-    func flash(_ message: String, cursorRect: NSRect) {
-        show(CandidatePanelModel(translation: message, translationDimmed: false), cursorRect: cursorRect)
+    func flash(_ message: String, symbol: String, cursorRect: NSRect) {
+        show(CandidatePanelModel(translation: message, translationDimmed: false, symbol: symbol), cursorRect: cursorRect)
         flashHideTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled else { return }
@@ -129,7 +131,10 @@ private final class CandidateView: NSView {
     private let candidateFont = NSFont.systemFont(ofSize: 17)
     private let indexFont = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
     private let translationFont = NSFont.systemFont(ofSize: 14)
+    private let flashFont = NSFont.systemFont(ofSize: 15, weight: .medium)
+    private let symbolGap: CGFloat = 6
     private var separatorY: CGFloat?
+    private var symbolImage: NSImage?
 
     override var isFlipped: Bool { true }
 
@@ -156,7 +161,8 @@ private final class CandidateView: NSView {
     private func translationString() -> NSAttributedString {
         let active = model.focus == .translation
         let color: NSColor = active ? .white : (model.translationDimmed ? .secondaryLabelColor : .labelColor)
-        return NSAttributedString(string: model.translation, attributes: [.font: translationFont, .foregroundColor: color])
+        let font = model.symbol == nil ? translationFont : flashFont
+        return NSAttributedString(string: model.translation, attributes: [.font: font, .foregroundColor: color])
     }
 
     private func relayout() {
@@ -178,7 +184,14 @@ private final class CandidateView: NSView {
             with: NSSize(width: textWidth, height: .greatestFiniteMagnitude),
             options: [.usesLineFragmentOrigin, .usesFontLeading]
         )
-        let rowWidth = textWidth + itemPadX * 2
+        symbolImage = model.symbol
+            .flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }?
+            .withSymbolConfiguration(
+                NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
+                    .applying(.init(paletteColors: [.controlAccentColor]))
+            )
+        let symbolWidth = symbolImage.map { ceil($0.size.width) + symbolGap } ?? 0
+        let rowWidth = symbolWidth + textWidth + itemPadX * 2
         // 只有提示文字（flash）时没有候选行，也就不画分隔线
         separatorY = candidateRects.isEmpty ? nil : padding + rowHeight + separatorGap
         translationRect = NSRect(
@@ -226,10 +239,16 @@ private final class CandidateView: NSView {
             NSColor.labelColor.withAlphaComponent(0.08).setFill()
             NSBezierPath(roundedRect: translationRect, xRadius: 6, yRadius: 6).fill()
         }
-        translationString().draw(
-            with: translationRect.insetBy(dx: itemPadX, dy: itemPadY),
-            options: [.usesLineFragmentOrigin, .usesFontLeading]
-        )
+        var textRect = translationRect.insetBy(dx: itemPadX, dy: itemPadY)
+        if let symbolImage {
+            let size = symbolImage.size
+            symbolImage.draw(in: NSRect(
+                x: textRect.minX, y: textRect.midY - size.height / 2, width: size.width, height: size.height
+            ))
+            textRect.origin.x += ceil(size.width) + symbolGap
+            textRect.size.width -= ceil(size.width) + symbolGap
+        }
+        translationString().draw(with: textRect, options: [.usesLineFragmentOrigin, .usesFontLeading])
     }
 
     // MARK: 鼠标
