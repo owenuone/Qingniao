@@ -11,7 +11,10 @@ CLT_DEV     := /Library/Developer/CommandLineTools/Library/Developer
 TEST_FLAGS  := -Xswiftc -F$(CLT_DEV)/Frameworks -Xlinker -F$(CLT_DEV)/Frameworks \
                -Xlinker -rpath -Xlinker $(CLT_DEV)/Frameworks -Xlinker -rpath -Xlinker $(CLT_DEV)/usr/lib
 
-.PHONY: build install uninstall log test clean clean-vendor
+VERSION     := $(shell /usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' Resources/Info.plist)
+DIST        := build/dist/$(APP_NAME)
+
+.PHONY: build install dist uninstall log test clean clean-vendor
 
 $(RIME_ICE):
 	mkdir -p vendor
@@ -41,6 +44,17 @@ install: build
 	mkdir -p "$(RIME_USER)"
 	cp Resources/rime/default.custom.yaml "$(RIME_USER)/"
 	$(RIME_DEPLOY) --build "$(RIME_USER)" "$(INSTALL_DIR)/$(APP_NAME).app/Contents/Resources/rime-data" "$(RIME_USER)/build" 2>/dev/null
+
+# 给没装 Homebrew 的同事用：librime 及依赖打包进 App，注册工具预编译，解压后 bash install.sh
+dist: build
+	rm -rf build/dist
+	mkdir -p $(DIST)
+	cp -R $(APP) $(DIST)/
+	Scripts/bundle_dylibs.sh $(DIST)/$(APP_NAME).app
+	swiftc -O Scripts/register.swift -o $(DIST)/register
+	cp Scripts/install.sh $(DIST)/
+	cd build/dist && ditto -c -k --keepParent $(APP_NAME) ../$(APP_NAME)-$(VERSION).zip
+	@echo "已生成 build/$(APP_NAME)-$(VERSION).zip"
 
 uninstall:
 	-killall $(APP_NAME) 2>/dev/null

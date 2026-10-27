@@ -26,7 +26,7 @@
 |------|------|------|
 | 语言 | **Swift 6** | macOS 输入法必须是原生 App，Python 无法实现 |
 | 输入法框架 | **InputMethodKit (IMKit)** | `IMKInputController` 接收按键、管理 marked text、提交文本 |
-| 拼音转汉字 | **librime 1.17**（Homebrew，含 lua 插件）+ 雾凇拼音词库 | 动态链接 `/opt/homebrew/opt/librime`，未打包进 App，换机器需先 `brew install librime` |
+| 拼音转汉字 | **librime 1.17**（Homebrew，含 lua 插件）+ 雾凇拼音词库 | 开发版动态链接 `/opt/homebrew/opt/librime`；`make dist` 把 librime、插件和依赖打包进 App，给没装 Homebrew 的人用 |
 | 全拼 / 双拼 | librime 输入方案（schema） | 全拼与各双拼方案共用同一套词库，只是切换 schema，无需自己写键位映射 |
 | 翻译 | **Apple Translation 框架**（仅离线） | 免费、低延迟、内容不出本机；macOS 26+ 支持无界面 `TranslationSession(installedSource:target:)`。不接在线翻译 |
 | 候选窗 | 自定义 `NSPanel`（non-activating） | 系统 `IMKCandidates` 不支持「候选行 + 译文行」布局和点击回调 |
@@ -165,7 +165,9 @@ YiKey/
 ├── vendor/rime-ice/              # make build 时按固定版本下载，不提交
 ├── Scripts/
 │   ├── make_icon.swift           # 生成菜单栏模板图标
-│   └── register.swift            # TISRegisterInputSource，make install 时调用
+│   ├── register.swift            # TISRegisterInputSource，make install 时调用；make dist 时编译成二进制
+│   ├── bundle_dylibs.sh          # make dist：Homebrew dylib 拷进 Contents/Frameworks 并改为 @rpath
+│   └── install.sh                # 随分发包附带的安装脚本
 ├── Sources/CRime/                # librime 头文件的 Swift 模块（pkg-config: rime）
 ├── Sources/YiKeyCore/         # 纯逻辑库，Swift 6 严格并发，可单测
 │   ├── Composer.swift            # 输入状态机 + ConversionEngine 协议：候选 → 待提交文本 → 译文，持有焦点
@@ -259,6 +261,7 @@ make build        # swift build -c release 并组装 YiKey.app
 make install      # 拷贝到 ~/Library/Input Methods/ 并重启进程
 make log          # log stream，subsystem = com.owen.inputmethod.YiKey
 make uninstall
+make dist         # 打包分发版 build/YiKey-<版本>.zip（自带 librime 等依赖），对方解压后 bash install.sh
 make test         # Swift Testing 单元测试（不要直接 swift test，CLT 环境找不到 Testing 模块）
 ```
 
@@ -267,6 +270,13 @@ make test         # Swift Testing 单元测试（不要直接 swift test，CLT �
 2. **系统设置 → 通用 → 语言与地区 → 翻译语言**：下载「英语」和「简体中文」离线语言包（未下载时译文行显示提示）
 
 `make install` 会先 `killall YiKey`，下次切换到该输入法时自动加载新版本，一般无需注销。
+
+### 分发（make dist）
+
+- 只支持 Apple Silicon、**macOS 27+**：Homebrew 的 dylib 都是 `minos 27.0`，`install.sh` 会检查
+- librime 按自身 dylib 所在目录查找 `rime-plugins/`，所以插件放 `Contents/Frameworks/rime-plugins/`；Homebrew 插件自带 `@loader_path/..` rpath，正好指向 `Frameworks`
+- 只有 ad-hoc 签名、未公证，`install.sh` 会去掉隔离标记；未预编译词库，首次使用时部署几秒
+- 已验证（2026-10-27）：本机用分发包安装后，`lsof` 确认 librime、全部依赖和 4 个插件都从 App 内加载，无 `/opt/homebrew` 引用
 
 ---
 
