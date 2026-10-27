@@ -31,17 +31,32 @@ final class SettingsWindowController {
     private func makeWindow() -> NSWindow {
         let window = NSWindow(
             contentRect: .zero,
-            styleMask: [.titled, .closable],
+            styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: true
         )
         window.title = "译键设置"
+        // 标题栏透明，毛玻璃背景延伸到标题栏下面
+        window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
         // 后台应用激活时系统不会切换桌面空间，所以让窗口出现在当前空间（包括全屏应用之上）。
         // 不要设 hidesOnDeactivate：菜单关闭后焦点回到原 App，窗口会被立刻隐藏
         window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         return window
     }
+}
+
+/// 透出窗口后面内容的毛玻璃；SwiftUI 的 Material 只模糊窗口内部，做不到这一点
+private struct WindowBlur: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = .underWindowBackground
+        view.blendingMode = .behindWindow
+        view.state = .active
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
 private struct SettingsView: View {
@@ -93,6 +108,8 @@ private struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(WindowBlur().ignoresSafeArea())
         .frame(width: 420)
         .fixedSize(horizontal: false, vertical: true)
         .task(id: foreignLanguage) { await refreshPackStatus() }
