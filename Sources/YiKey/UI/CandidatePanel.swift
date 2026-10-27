@@ -123,11 +123,13 @@ private final class CandidateView: NSView {
     private let padding: CGFloat = 6
     private let itemPadX: CGFloat = 8
     private let itemPadY: CGFloat = 4
-    private let rowSpacing: CGFloat = 2
+    /// 候选行与译文行之间分隔线上下各留的间距
+    private let separatorGap: CGFloat = 4
     private let maxTranslationWidth: CGFloat = 520
     private let candidateFont = NSFont.systemFont(ofSize: 17)
     private let indexFont = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
-    private let translationFont = NSFont.systemFont(ofSize: 15)
+    private let translationFont = NSFont.systemFont(ofSize: 14)
+    private var separatorY: CGFloat?
 
     override var isFlipped: Bool { true }
 
@@ -177,9 +179,11 @@ private final class CandidateView: NSView {
             options: [.usesLineFragmentOrigin, .usesFontLeading]
         )
         let rowWidth = textWidth + itemPadX * 2
+        // 只有提示文字（flash）时没有候选行，也就不画分隔线
+        separatorY = candidateRects.isEmpty ? nil : padding + rowHeight + separatorGap
         translationRect = NSRect(
             x: padding,
-            y: padding + (candidateRects.isEmpty ? 0 : rowHeight + rowSpacing),
+            y: separatorY.map { $0 + 1 + separatorGap } ?? padding,
             width: rowWidth,
             height: ceil(bounds.height) + itemPadY * 2
         )
@@ -189,10 +193,13 @@ private final class CandidateView: NSView {
     // MARK: 绘制
 
     override func draw(_ dirtyRect: NSRect) {
-        // 背景由父视图的毛玻璃提供，这里只描边，浅色背景上也能看清边界
+        // 毛玻璃上叠一层半透明底色：否则深色内容（如终端）会透上来，底色发灰、描边发白
         let radius = Self.cornerRadius
+        let outline = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: radius, yRadius: radius)
+        NSColor.windowBackgroundColor.withAlphaComponent(0.5).setFill()
+        outline.fill()
         NSColor.separatorColor.setStroke()
-        NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: radius, yRadius: radius).stroke()
+        outline.stroke()
 
         for (index, rect) in candidateRects.enumerated() {
             let highlighted = index == model.highlightedIndex
@@ -205,6 +212,11 @@ private final class CandidateView: NSView {
                 NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6).fill()
             }
             candidateString(index, active: active).draw(at: NSPoint(x: rect.minX + itemPadX, y: rect.minY + itemPadY))
+        }
+
+        if let separatorY {
+            NSColor.separatorColor.setFill()
+            NSRect(x: padding + itemPadX, y: separatorY, width: bounds.width - (padding + itemPadX) * 2, height: 1).fill()
         }
 
         if model.focus == .translation {
