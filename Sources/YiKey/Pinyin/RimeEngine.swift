@@ -15,6 +15,8 @@ final class RimeRuntime {
 
     private(set) var isReady = false
     private var started = false
+    /// rime 已成功初始化；启动失败时 isReady 永远不会变为 true
+    private var initialized = false
 
     static let userDataURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("YiKey/rime", isDirectory: true)
@@ -47,12 +49,14 @@ final class RimeRuntime {
         traits.log_dir = UnsafePointer(strdup(logDir.path))
         traits.distribution_name = UnsafePointer(strdup("YiKey"))
         traits.distribution_code_name = UnsafePointer(strdup("YiKey"))
-        traits.distribution_version = UnsafePointer(strdup("0.2.0"))
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        traits.distribution_version = UnsafePointer(strdup(version))
         traits.app_name = UnsafePointer(strdup("rime.yikey"))
         traits.min_log_level = 1
 
         rimeAPI.setup(&traits)
         rimeAPI.initialize(&traits)
+        initialized = true
 
         guard rimeAPI.start_maintenance(1) != 0 else {
             isReady = true
@@ -63,6 +67,7 @@ final class RimeRuntime {
 
     /// 词典文件变化后重新部署。已有 session 会被清掉，RimeEngine 下次按键时重建
     func redeploy() async {
+        guard initialized else { return }
         while !isReady {
             try? await Task.sleep(for: .seconds(1))
         }
@@ -110,8 +115,6 @@ final class RimeEngine: ConversionEngine {
             _ = rimeAPI.destroy_session(session)
         }
     }
-
-    var isReady: Bool { ensureSession() }
 
     func selectScheme(_ id: String) {
         guard ensureSession(), id != schemeID else { return }

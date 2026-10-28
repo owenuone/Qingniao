@@ -173,7 +173,9 @@ final class InputController: IMKInputController {
         case 126: return .up
         default:
             guard let chars = event.characters, chars.count == 1, let c = chars.first,
-                  c.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) })
+                  c.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }),
+                  // Forward Delete、Home、F1 等功能键的字符在私有区 U+F700–U+F8FF，不是可输入字符
+                  !c.unicodeScalars.contains(where: { (0xF700...0xF8FF).contains($0.value) })
             else { return nil }
             // Caps Lock 用来切换方向，不应让英文输入变成大写，大小写只由 Shift 决定
             if modifiers.contains(.capsLock), c.isLetter {

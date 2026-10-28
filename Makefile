@@ -2,7 +2,8 @@ APP_NAME    := YiKey
 APP         := build/$(APP_NAME).app
 INSTALL_DIR := $(HOME)/Library/Input Methods
 RIME_USER   := $(HOME)/Library/Application Support/YiKey/rime
-RIME_DEPLOY := $(shell brew --prefix librime)/bin/rime_deployer
+# 用 = 延迟求值，只有 make install 才调用 brew
+RIME_DEPLOY  = $(shell brew --prefix librime)/bin/rime_deployer
 # 雾凇拼音固定版本，升级时改这里后执行 make clean-vendor build
 RIME_ICE_REV := da1fbe602e38f26db846fa10120ee64c2b0324c0
 # 上面提交的时间，写进 Info.plist，在线更新词典时用来判断是否有新版本
