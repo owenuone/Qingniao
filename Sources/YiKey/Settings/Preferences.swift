@@ -13,10 +13,9 @@ enum Preferences {
         PinyinScheme(id: "double_pinyin_flypy", name: "小鹤双拼"),
         PinyinScheme(id: "double_pinyin_mspy", name: "微软双拼"),
         PinyinScheme(id: "double_pinyin", name: "自然码双拼"),
-        PinyinScheme(id: "double_pinyin_sogou", name: "搜狗双拼"),
-        PinyinScheme(id: "double_pinyin_abc", name: "智能 ABC 双拼"),
-        PinyinScheme(id: "double_pinyin_ziguang", name: "紫光双拼"),
-        PinyinScheme(id: "double_pinyin_jiajia", name: "拼音加加双拼"),
+        PinyinScheme(id: "wubi86_jidian", name: "五笔 86"),
+        PinyinScheme(id: "wubi98", name: "五笔 98"),
+        PinyinScheme(id: "wubi06", name: "新世纪五笔"),
     ]
 
     /// 列表来自 macOS 27 的 LanguageAvailability().supportedLanguages（2026-10-27 核对）

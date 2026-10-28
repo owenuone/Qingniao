@@ -26,7 +26,7 @@
 |------|------|------|
 | 语言 | **Swift 6** | macOS 输入法必须是原生 App，Python 无法实现 |
 | 输入法框架 | **InputMethodKit (IMKit)** | `IMKInputController` 接收按键、管理 marked text、提交文本 |
-| 拼音转汉字 | **librime 1.17**（Homebrew，含 lua 插件）+ 雾凇拼音词库 | 开发版动态链接 `/opt/homebrew/opt/librime`；`make dist` 把 librime、插件和依赖打包进 App，给没装 Homebrew 的人用 |
+| 拼音转汉字 | **librime 1.17**（Homebrew，含 lua 插件）+ 雾凇拼音词库 + 五笔 86 / 98 / 新世纪 | 开发版动态链接 `/opt/homebrew/opt/librime`；`make dist` 把 librime、插件和依赖打包进 App，给没装 Homebrew 的人用 |
 | 全拼 / 双拼 | librime 输入方案（schema） | 全拼与各双拼方案共用同一套词库，只是切换 schema，无需自己写键位映射 |
 | 翻译 | **Apple Translation 框架**（仅离线） | 免费、低延迟、内容不出本机；macOS 26+ 支持无界面 `TranslationSession(installedSource:target:)`。不接在线翻译 |
 | 候选窗 | 自定义 `NSPanel`（non-activating） | 系统 `IMKCandidates` 不支持「候选行 + 译文行」布局和点击回调 |
@@ -72,16 +72,21 @@ schema 名称已对照 [rime-ice 仓库](https://github.com/iDvel/rime-ice) 根�
 | 小鹤双拼 | `double_pinyin_flypy` | 作者常用，开发和测试优先保证 |
 | 微软双拼 | `double_pinyin_mspy` | |
 | 自然码双拼 | `double_pinyin` | 注意文件名无后缀 |
-| 搜狗双拼 | `double_pinyin_sogou` | |
-| 智能 ABC 双拼 | `double_pinyin_abc` | |
-| 紫光双拼 | `double_pinyin_ziguang` | |
-| 拼音加加双拼 | `double_pinyin_jiajia` | |
+| 五笔 86 | `wubi86_jidian` | 来自 [KyleBing/rime-wubi86-jidian](https://github.com/KyleBing/rime-wubi86-jidian)（Apache-2.0），四码唯一自动上屏，`z` 键拼音反查 |
+| 五笔 98 | `wubi98` | 来自 [lotem/rime-wubi98](https://github.com/lotem/rime-wubi98)（词典标注 GPLv3），无自动上屏，`z` 键拼音反查 |
+| 新世纪五笔 | `wubi06` | 词典来自 [byujiang/wubi06_rime](https://github.com/byujiang/wubi06_rime)（GPL-3.0）；方案是 `Resources/rime/wubi06.schema.yaml`（上游方案依赖未打包的 kaomoji/emoji 词典），无自动上屏，`z` 键拼音反查 |
+
+搜狗、智能 ABC、紫光、拼音加加双拼于 2026-10-28 移除；已选这些方案的用户回落到默认全拼（`Preferences.schemeID` 的校验）。
+
+**简拼**：全拼方案（`rime_ice`）自带超级简拼，`nh` → 你好、`zgr` → 中国人，无需配置。双拼方案雾凇默认关闭首字母简拼（三字母时 `kj'x` 会切成 `k'jx`），保持关闭。
+
+**五笔**：三套五笔版本分别固定在 `Makefile` 的 `WUBI_REV` / `WUBI98_REV` / `WUBI06_REV`，下载到 `vendor/rime-wubi86`、`rime-wubi98`、`rime-wubi06`，只拷需要的方案、词典和 LICENSE（wubi06 的 tar 包不含 LICENSE，单独下载）。反查共用极点五笔带的 `pinyin_simp`；wubi98 拷贝时删掉 `tips`，避免「〔拼音〕」出现在 marked text 里。`pinyin_simp` 必须列在 `schema_list` 里才会被编译，但不在 `Preferences.schemes` 中，设置窗口不显示。marked text 显示五笔编码；四码自动上屏在 rime 里是一次提交，开着句子缓冲时进缓冲。
 
 雾凇拼音版本固定在 `Makefile` 的 `RIME_ICE_REV`，`make build` 时下载到 `vendor/rime-ice`（不提交），再拷进 App 的 `Contents/Resources/rime-data`。雾凇自带 emoji 候选、lua 扩展（如输入 `date` 出日期），目前全部保留。
 
 - 双拼时，marked text 显示 rime 转写后的**全拼**（如键入 `xrvs` 显示 `xuan zhong`），方便核对；由 schema 的 `preedit_format` 实现
 - 切换方案只影响按键到拼音的解析，候选、翻译、焦点模型完全不变；切换时调用 `select_schema`，不重启进程
-- `Resources/rime/default.custom.yaml` 补丁：只部署上表 8 个方案、每页 6 个候选。启动时同步到用户目录
+- `Resources/rime/default.custom.yaml` 补丁：只部署上表 7 个方案（加反查用的 `pinyin_simp`）、每页 6 个候选。启动时同步到用户目录
 - 用户目录 `~/Library/Application Support/YiKey/rime`（用户词频、编译产物），rime 日志在 `~/Library/Logs/YiKey`
 - `make install` 会用 `rime_deployer` 预编译词库；之后输入法启动时仍会做一次维护检查（安装后首次约 4s，之后约 1s），期间打字会提示"词库部署中"
 
@@ -168,8 +173,10 @@ YiKey/
 ├── Resources/
 │   ├── Info.plist                # IMKit 必需配置（见下）
 │   ├── icon.tiff                 # 由 Scripts/make_icon.swift 生成
-│   └── rime/default.custom.yaml  # 雾凇 default.yaml 的补丁
+│   ├── rime/default.custom.yaml  # 雾凇 default.yaml 的补丁
+│   └── rime/wubi06.schema.yaml   # 新世纪五笔方案（词典来自上游）
 ├── vendor/rime-ice/              # make build 时按固定版本下载，不提交
+├── vendor/rime-wubi86/ … 98/ 06/ # 三套五笔，同上
 ├── Scripts/
 │   ├── make_icon.swift           # 生成菜单栏模板图标
 │   ├── register.swift            # TISRegisterInputSource，make install 时调用；make dist 时编译成二进制
