@@ -5,6 +5,8 @@ RIME_USER   := $(HOME)/Library/Application Support/YiKey/rime
 RIME_DEPLOY := $(shell brew --prefix librime)/bin/rime_deployer
 # 雾凇拼音固定版本，升级时改这里后执行 make clean-vendor build
 RIME_ICE_REV := da1fbe602e38f26db846fa10120ee64c2b0324c0
+# 上面提交的时间，写进 Info.plist，在线更新词典时用来判断是否有新版本
+RIME_ICE_DATE := 2026-10-05T13:37:01Z
 RIME_ICE     := vendor/rime-ice
 # 极点五笔 86（Apache-2.0）固定版本，升级方式同上
 WUBI_REV     := 18a6016c3d08a20f713f8f8e1791a2e79e0be081
@@ -55,6 +57,7 @@ build: $(RIME_ICE) $(WUBI) $(WUBI98) $(WUBI06)
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	cp .build/release/$(APP_NAME) $(APP)/Contents/MacOS/
 	cp Resources/Info.plist $(APP)/Contents/
+	/usr/libexec/PlistBuddy -c "Add :YKDictionaryDate string $(RIME_ICE_DATE)" $(APP)/Contents/Info.plist
 	cp Resources/icon.tiff Resources/rime/default.custom.yaml $(APP)/Contents/Resources/
 	cp -R Resources/en.lproj Resources/zh-Hans.lproj $(APP)/Contents/Resources/
 	rsync -a --exclude others --exclude build --exclude '*.md' --exclude '.*' \

@@ -49,7 +49,13 @@ final class InputController: IMKInputController {
 
     nonisolated override func activateServer(_ sender: Any!) {
         super.activateServer(sender)
-        MainActor.assumeIsolated { syncSettings() }
+        MainActor.assumeIsolated {
+            syncSettings()
+            DictionaryUpdater.shared.updateIfDue()
+            if let notice = DictionaryUpdater.shared.takeNotice(), let client = sender as? IMKTextInput {
+                panel.flash(notice, symbol: "books.vertical", cursorRect: cursorRect(of: client))
+            }
+        }
     }
 
     nonisolated override func menu() -> NSMenu! {

@@ -88,6 +88,13 @@ schema 名称已对照 [rime-ice 仓库](https://github.com/iDvel/rime-ice) 根�
 - 切换方案只影响按键到拼音的解析，候选、翻译、焦点模型完全不变；切换时调用 `select_schema`，不重启进程
 - `Resources/rime/default.custom.yaml` 补丁：只部署上表 7 个方案（加反查用的 `pinyin_simp`）、每页 6 个候选。启动时同步到用户目录
 - 用户目录 `~/Library/Application Support/YiKey/rime`（用户词频、编译产物），rime 日志在 `~/Library/Logs/YiKey`
+- **词典在线更新**（`DictionaryUpdater`）：后台自动进行，**没有设置项和界面**。激活输入法时距上次检查（UserDefaults `dictionaryLastCheck`）超过 24h 就检查并安装，失败只记日志、第二天再试；装好后下次激活时候选窗提示「词库已更新」
+  - 只更新雾凇的 `cn_dicts`（nightly 发布的 `cn_dicts.zip`，约 14MB，有 sha256 校验），**不更新方案和 lua**，避免与 App 内的方案、librime 版本不兼容；五笔不在线更新
+  - 解压到用户目录 `cn_dicts/`，rime 优先读用户目录，覆盖 App 自带的同名词典；然后 `RimeRuntime.redeploy()`（清掉所有 session 后重新部署，约 10s，期间提示「词库部署中」）
+  - 版本判断：构建时把 `RIME_ICE_DATE`（`RIME_ICE_REV` 的提交时间）写进 Info.plist `YKDictionaryDate`；nightly 资源的 `updated_at` 比它晚 1h 以上，或比已下载版本新、且摘要不同才更新（CI 在提交后几分钟才构建，留出余量）。已下载版本存于 UserDefaults `dictionaryUpdatedAt` / `dictionaryDigest`
+  - App 升级后自带词典比下载的新时，启动时删掉用户目录的 `cn_dicts`（`removeStaleDictionaries`）
+  - 升级 `RIME_ICE_REV` 时要同时改 `RIME_ICE_DATE`
+  - 已验证（2026-10-28）：把自带日期设为 2026-01-01 后激活输入法，自动下载、校验、替换并重新部署成功
 - `make install` 会用 `rime_deployer` 预编译词库；之后输入法启动时仍会做一次维护检查（安装后首次约 4s，之后约 1s），期间打字会提示"词库部署中"
 
 **待提交文本的计算**：不能用 rime 的 `commit_text_preview`，高亮非首选候选时它会变成"高亮候选 + 剩余字母"（如 `灯qmxrvs`）。实际用 `preedit` 前 `sel_start` 字节（已确认分段）+ 高亮候选文本。
@@ -191,7 +198,8 @@ YiKey/
 │   ├── Log.swift                 # os.Logger
 │   ├── InputController.swift     # IMKInputController 子类：按键分发、marked text、提交、翻译调度
 │   ├── Pinyin/
-│   │   └── RimeEngine.swift      # RimeRuntime（进程级初始化/部署）+ RimeEngine（每个会话一个 rime session）
+│   │   ├── RimeEngine.swift      # RimeRuntime（进程级初始化/部署）+ RimeEngine（每个会话一个 rime session）
+│   │   └── DictionaryUpdater.swift # 后台每天从雾凇 nightly 下载 cn_dicts 到用户目录并重新部署
 │   ├── Translate/
 │   │   └── AppleTranslator.swift # 按方向缓存 TranslationSession + 译文 LRU 缓存
 │   ├── UI/
@@ -309,6 +317,6 @@ make test         # Swift Testing 单元测试（不要直接 swift test，CLT �
 ## 已确认决策
 
 - 最低支持 **macOS 26**
-- 翻译只用 **Apple 离线翻译**，不接在线 API
+- 翻译只用 **Apple 离线翻译**，不接在线 API（唯一的联网是从 GitHub 下载雾凇词典，不发送输入内容）
 - 第 1 行显示**多个拼音候选**，第 2 行**只翻译当前高亮候选**（待提交文本）
 - 支持**全拼和双拼**，**默认全拼**（2026-10-27 由小鹤双拼改为全拼），其他方案在设置窗口中切换

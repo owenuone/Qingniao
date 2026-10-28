@@ -33,6 +33,7 @@ final class RimeRuntime {
             try FileManager.default.createDirectory(at: Self.userDataURL, withIntermediateDirectories: true)
             try FileManager.default.createDirectory(at: logDir, withIntermediateDirectories: true)
             try installCustomConfig(from: resources)
+            DictionaryUpdater.removeStaleDictionaries()
         } catch {
             log.error("准备 rime 目录失败: \(error.localizedDescription, privacy: .public)")
             return
@@ -57,16 +58,34 @@ final class RimeRuntime {
             isReady = true
             return
         }
+        Task { await finishMaintenance() }
+    }
+
+    /// 词典文件变化后重新部署。已有 session 会被清掉，RimeEngine 下次按键时重建
+    func redeploy() async {
+        while !isReady {
+            try? await Task.sleep(for: .seconds(1))
+        }
+        isReady = false
+        rimeAPI.cleanup_all_sessions()
+        guard rimeAPI.start_maintenance(1) != 0 else {
+            isReady = true
+            return
+        }
+        await finishMaintenance()
+    }
+
+    /// 部署期间 isReady 为 false，打字时提示「词库部署中」
+    private func finishMaintenance() async {
         log.info("rime 部署开始")
-        Thread.detachNewThread {
-            rimeAPI.join_maintenance_thread()
-            DispatchQueue.main.async {
-                MainActor.assumeIsolated {
-                    RimeRuntime.shared.isReady = true
-                    log.info("rime 部署完成")
-                }
+        await withCheckedContinuation { continuation in
+            Thread.detachNewThread {
+                rimeAPI.join_maintenance_thread()
+                continuation.resume()
             }
         }
+        isReady = true
+        log.info("rime 部署完成")
     }
 
     /// 把 App 内置的 default.custom.yaml 同步到用户目录（rime 只从用户目录读取补丁）

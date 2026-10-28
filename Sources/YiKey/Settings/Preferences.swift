@@ -27,6 +27,25 @@ enum Preferences {
     private static let schemeKey = "pinyinScheme"
     private static let foreignLanguageKey = "foreignLanguage"
     private static let buffersSentenceKey = "buffersSentence"
+    private static let dictionaryUpdatedAtKey = "dictionaryUpdatedAt"
+    private static let dictionaryDigestKey = "dictionaryDigest"
+    private static let dictionaryLastCheckKey = "dictionaryLastCheck"
+
+    /// 已下载词典的版本（nightly 资源的更新时间）；nil 表示使用 App 自带词典
+    static var dictionaryUpdatedAt: Date? {
+        get { UserDefaults.standard.object(forKey: dictionaryUpdatedAtKey) as? Date }
+        set { UserDefaults.standard.set(newValue, forKey: dictionaryUpdatedAtKey) }
+    }
+
+    static var dictionaryDigest: String? {
+        get { UserDefaults.standard.string(forKey: dictionaryDigestKey) }
+        set { UserDefaults.standard.set(newValue, forKey: dictionaryDigestKey) }
+    }
+
+    static var dictionaryLastCheck: Date? {
+        get { UserDefaults.standard.object(forKey: dictionaryLastCheckKey) as? Date }
+        set { UserDefaults.standard.set(newValue, forKey: dictionaryLastCheckKey) }
+    }
 
     /// 选词后先攒成整句再上屏，默认开启
     static var buffersSentence: Bool {
