@@ -54,6 +54,13 @@
 
 **部分候选**：高亮候选只覆盖部分拼音时（如 `xr v` 只匹配了 `xr`），选中它只确认这一段，剩余拼音继续输入，与系统输入法行为一致；只有选择译文才会整句上屏。
 
+**句子缓冲**（设置「连续选词组成整句」，UserDefaults `buffersSentence`，默认开）：选中覆盖全部拼音的候选时不上屏，先攒进 `Composer` 的句子缓冲，可继续打下一段拼音，整句一起翻译。
+- marked text = 缓冲 + rime preedit；待提交文本 = 缓冲 + 已确认分段 + 高亮候选
+- 拼音选完、只剩缓冲时：候选行只有一个候选（整句），`Space` / `Enter` / 点击上屏中文，`↓`/`Tab` 进译文行，`Backspace` 删缓冲末字，`Esc` 清空整句
+- 缓冲非空时中文标点、数字也追加进缓冲；空闲时单打标点仍直接上屏
+- 有拼音时 `Enter` 上屏待提交文本（缓冲 + 已确认分段 + 高亮候选）；失焦、切方向、单按 Shift 时缓冲一并上屏
+- 关闭后恢复「选词即上屏」；设置在下次激活输入法（切换 App）时生效
+
 ### 全拼与双拼
 
 中→外模式支持以下输入方案，只在设置窗口中切换（输入法菜单不列方案），选择保存在 UserDefaults `pinyinScheme`；未设置时用 `Preferences.schemes` 第一项。
@@ -92,8 +99,8 @@ schema 名称已对照 [rime-ice 仓库](https://github.com/iDvel/rime-ice) 根�
 | `[` / `]` | 以词定字（雾凇绑定） | 回到候选行并以词定字 |
 | `↓` / `Tab` | 焦点移到译文行 | 无 |
 | `↑` / `Shift+Tab` | 无 | 焦点回到候选行 |
-| `Space` | 选中高亮候选 | 提交译文 |
-| `Enter` | 原始按键原样上屏（雾凇行为，双拼时上屏的是双拼字母） | 提交译文 |
+| `Space` | 选中高亮候选（句子缓冲开启时进缓冲；拼音已选完时上屏整句中文） | 提交译文 |
+| `Enter` | 上屏待提交文本（缓冲 + 已确认分段 + 高亮候选），不进缓冲；未被候选覆盖的剩余拼音丢弃。要原样上屏按键用单按 Shift | 提交译文 |
 | `Esc` | 取消输入 | 焦点回到候选行 |
 | `Backspace` | 删除一个字符，重新转换 + 翻译 | 同左，焦点回到候选行 |
 
@@ -170,7 +177,7 @@ YiKey/
 │   └── install.sh                # 随分发包附带的安装脚本
 ├── Sources/CRime/                # librime 头文件的 Swift 模块（pkg-config: rime）
 ├── Sources/YiKeyCore/         # 纯逻辑库，Swift 6 严格并发，可单测
-│   ├── Composer.swift            # 输入状态机 + ConversionEngine 协议：候选 → 待提交文本 → 译文，持有焦点
+│   ├── Composer.swift            # 输入状态机 + ConversionEngine 协议：候选 → 待提交文本 → 译文，持有焦点和句子缓冲
 │   └── TranslationCache.swift    # 译文 LRU 缓存
 ├── Sources/YiKey/             # 可执行 target（Swift 5 语言模式，见注意事项）
 │   ├── main.swift                # 启动 IMKServer

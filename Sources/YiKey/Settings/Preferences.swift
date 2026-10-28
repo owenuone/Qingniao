@@ -27,6 +27,13 @@ enum Preferences {
 
     private static let schemeKey = "pinyinScheme"
     private static let foreignLanguageKey = "foreignLanguage"
+    private static let buffersSentenceKey = "buffersSentence"
+
+    /// 选词后先攒成整句再上屏，默认开启
+    static var buffersSentence: Bool {
+        get { UserDefaults.standard.object(forKey: buffersSentenceKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: buffersSentenceKey) }
+    }
 
     static var foreignLanguage: String {
         get {

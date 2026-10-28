@@ -351,7 +351,9 @@ final class InputController: IMKInputController {
     // MARK: 设置
 
     private func makeComposer(for direction: Direction) -> Composer {
-        direction == .chineseToForeign ? Composer(engine: rimeEngine) : Composer()
+        direction == .chineseToForeign
+            ? Composer(engine: rimeEngine, buffersSentence: Preferences.buffersSentence)
+            : Composer()
     }
 
     private func switchDirection(to direction: Direction, client: IMKTextInput?) {
@@ -369,6 +371,7 @@ final class InputController: IMKInputController {
         switchDirection(to: direction, client: client())
         if direction == .chineseToForeign {
             rimeEngine.selectScheme(Preferences.schemeID)
+            composer.buffersSentence = Preferences.buffersSentence
         }
     }
 

@@ -113,6 +113,7 @@ private struct SettingsView: View {
     }
 
     @State private var schemeID = Preferences.schemeID
+    @State private var buffersSentence = Preferences.buffersSentence
     @State private var foreignLanguage = Preferences.foreignLanguage
     @State private var packStatus = PackStatus.checking
     @State private var downloadConfiguration: TranslationSession.Configuration?
@@ -121,7 +122,7 @@ private struct SettingsView: View {
         Form {
             Section { header }
 
-            Section("输入方案") {
+            Section {
                 Picker(selection: $schemeID) {
                     ForEach(Preferences.schemes, id: \.id) { scheme in
                         Text(scheme.name).tag(scheme.id)
@@ -130,6 +131,16 @@ private struct SettingsView: View {
                     IconLabel("中文输入", symbol: "keyboard", color: .blue)
                 }
                 .onChange(of: schemeID) { _, id in Preferences.schemeID = id }
+                Toggle(isOn: $buffersSentence) {
+                    IconLabel("连续选词组成整句", symbol: "text.append", color: .purple)
+                }
+                .onChange(of: buffersSentence) { _, on in Preferences.buffersSentence = on }
+            } header: {
+                Text("输入方案")
+            } footer: {
+                Text("开启后选词不立即上屏，可继续输入下一段，整句一起翻译；拼音选完后按空格或回车上屏中文。切换到其他 App 再回来后生效。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
 
             Section {

@@ -81,35 +81,56 @@ public struct Composer {
     public let direction: Direction
     private let engine: (any ConversionEngine)?
     private var englishInput = ""
+    /// 句子缓冲：选中的候选先攒在这里，不立即上屏，便于连续选词组成长句再整句翻译
+    private var sentence = ""
+    public var buffersSentence: Bool
     public private(set) var focus: Focus = .candidates
     public private(set) var translation: TranslationState = .none
 
     /// engine 为 nil 时为英→中模式
-    public init(engine: (any ConversionEngine)? = nil) {
+    public init(engine: (any ConversionEngine)? = nil, buffersSentence: Bool = false) {
         self.engine = engine
+        self.buffersSentence = buffersSentence
         direction = engine == nil ? .foreignToChinese : .chineseToForeign
     }
 
-    public var isComposing: Bool { engine?.state.isComposing ?? !englishInput.isEmpty }
+    public var isComposing: Bool {
+        guard let engine else { return !englishInput.isEmpty }
+        return engine.state.isComposing || !sentence.isEmpty
+    }
 
-    public var markedText: String { engine?.state.preedit ?? englishInput }
+    public var markedText: String {
+        guard let engine else { return englishInput }
+        return sentence + engine.state.preedit
+    }
 
     /// 原样按键，切到直接英文时上屏（拼音模式下误打的英文单词可以这样直接出）
-    public var rawInput: String { engine?.state.rawInput ?? englishInput }
+    public var rawInput: String {
+        guard let engine else { return englishInput }
+        return sentence + engine.state.rawInput
+    }
 
+    /// 拼音已选完、只剩句子缓冲时，唯一候选就是整句
     public var candidates: [String] {
-        if let engine { return engine.state.candidates }
+        if let engine {
+            if engine.state.isComposing { return engine.state.candidates }
+            return sentence.isEmpty ? [] : [sentence]
+        }
         return englishInput.isEmpty ? [] : [englishInput]
     }
 
-    public var highlightedIndex: Int { engine?.state.highlightedIndex ?? 0 }
+    public var highlightedIndex: Int {
+        guard let engine, engine.state.isComposing else { return 0 }
+        return engine.state.highlightedIndex
+    }
 
-    /// 待提交文本 = 已确认分段 + 当前高亮候选，也是译文行翻译的对象。
+    /// 待提交文本 = 句子缓冲 + 已确认分段 + 当前高亮候选，也是译文行翻译的对象。
     public var pendingText: String {
         guard let state = engine?.state else { return englishInput }
+        guard state.isComposing else { return sentence }
         let highlighted = state.candidates.indices.contains(state.highlightedIndex)
             ? state.candidates[state.highlightedIndex] : ""
-        return state.confirmedText + highlighted
+        return sentence + state.confirmedText + highlighted
     }
 
     public var freshTranslation: String? {
@@ -133,14 +154,17 @@ public struct Composer {
             return .commit(candidates[index])
         }
         focus = .candidates
+        guard engine.state.isComposing else {
+            return sentence.isEmpty ? .update : .commit(sentence)
+        }
         engine.selectCandidate(at: index)
-        return afterEngine(engine, handled: true)
+        return afterEngine(engine, handled: true, wasComposing: true)
     }
 
     /// 系统要求结束输入（如点击别处）时应上屏的文本。
     public mutating func forceCommitText() -> String {
         guard let engine else { return englishInput }
-        return engine.commitComposition() ?? ""
+        return sentence + (engine.commitComposition() ?? "")
     }
 
     /// 异步翻译结果回来时调用；原文已变化的过期结果直接丢弃。
@@ -156,6 +180,7 @@ public struct Composer {
 
     public mutating func reset() {
         englishInput = ""
+        sentence = ""
         focus = .candidates
         translation = .none
         engine?.clear()
@@ -178,9 +203,13 @@ public struct Composer {
             }
         }
 
+        if !engine.state.isComposing, !sentence.isEmpty {
+            return handleSentence(key, engine: engine)
+        }
+
         // 空闲时全部交给 rime：字母开始输入，标点转成中文标点直接上屏
         guard engine.state.isComposing else {
-            return afterEngine(engine, handled: engine.process(key))
+            return afterEngine(engine, handled: engine.process(key), wasComposing: false)
         }
 
         switch key {
@@ -195,8 +224,43 @@ public struct Composer {
         case .right:
             moveHighlight(engine, by: 1)
             return .update
+        case .enter:
+            // 上屏待提交文本（不走 rime 的原样上屏），未覆盖的剩余拼音丢弃，与译文一致
+            let text = pendingText
+            reset()
+            return .commit(text)
         default:
-            return afterEngine(engine, handled: engine.process(key))
+            return afterEngine(engine, handled: engine.process(key), wasComposing: true)
+        }
+    }
+
+    /// 拼音已选完、只剩句子缓冲时的按键
+    private mutating func handleSentence(_ key: Key, engine: any ConversionEngine) -> ComposerAction {
+        switch key {
+        case .space, .enter:
+            return .commit(sentence)
+        case .backspace:
+            sentence.removeLast()
+            if sentence.isEmpty {
+                reset()
+                return .cancel
+            }
+            return .update
+        case .escape:
+            reset()
+            return .cancel
+        case .tab, .down:
+            focus = .translation
+            return .update
+        case .up, .shiftTab, .left, .right:
+            return .update
+        case let .character(c):
+            // 字母开始下一段拼音，标点由 rime 转换后追加；rime 不处理的字符（如数字）原样追加
+            if !engine.process(key) {
+                sentence.append(c)
+                return .update
+            }
+            return afterEngine(engine, handled: true, wasComposing: false)
         }
     }
 
@@ -215,11 +279,15 @@ public struct Composer {
         }
     }
 
-    private mutating func afterEngine(_ engine: any ConversionEngine, handled: Bool) -> ComposerAction {
+    private mutating func afterEngine(
+        _ engine: any ConversionEngine, handled: Bool, wasComposing: Bool
+    ) -> ComposerAction {
         if let text = engine.takeCommit() {
-            return .commit(text)
+            // 空闲时直接上屏的标点不进缓冲，否则单打一个标点也要再按空格
+            guard buffersSentence, wasComposing || !sentence.isEmpty else { return .commit(text) }
+            sentence += text
         }
-        if engine.state.isComposing {
+        if isComposing {
             return .update
         }
         return handled ? .cancel : .passThrough

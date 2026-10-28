@@ -80,9 +80,9 @@ private final class FakeEngine: ConversionEngine {
 }
 
 @MainActor
-private func makeComposer(typing input: String) -> (Composer, FakeEngine) {
+private func makeComposer(typing input: String, buffersSentence: Bool = false) -> (Composer, FakeEngine) {
     let engine = FakeEngine()
-    var composer = Composer(engine: engine)
+    var composer = Composer(engine: engine, buffersSentence: buffersSentence)
     for c in input { _ = composer.handle(.character(c)) }
     return (composer, engine)
 }
@@ -176,4 +176,92 @@ private func makeComposer(typing input: String) -> (Composer, FakeEngine) {
     _ = english.handle(.character("h"))
     _ = english.handle(.character("i"))
     #expect(english.rawInput == "hi")
+}
+
+// MARK: 句子缓冲
+
+@MainActor
+private func type(_ input: String, into composer: inout Composer) {
+    for c in input { _ = composer.handle(.character(c)) }
+}
+
+@Test @MainActor func bufferedSelectionDoesNotCommit() {
+    var (composer, _) = makeComposer(typing: "xr", buffersSentence: true)
+    #expect(composer.handle(.space) == .update)
+    #expect(composer.isComposing)
+    #expect(composer.markedText == "选中")
+    #expect(composer.candidates == ["选中"])
+    #expect(composer.pendingText == "选中")
+
+    type("xr", into: &composer)
+    _ = composer.handle(.right)
+    #expect(composer.markedText == "选中xr")
+    #expect(composer.pendingText == "选中旋转")
+    #expect(composer.selectCandidate(at: 1) == .update)
+    #expect(composer.markedText == "选中旋转")
+}
+
+@Test @MainActor func bufferedSentenceCommitsWithSpaceOrEnter() {
+    var (composer, _) = makeComposer(typing: "xr", buffersSentence: true)
+    _ = composer.handle(.space)
+    #expect(composer.handle(.space) == .commit("选中"))
+
+    (composer, _) = makeComposer(typing: "xr", buffersSentence: true)
+    _ = composer.handle(.space)
+    #expect(composer.handle(.enter) == .commit("选中"))
+
+    (composer, _) = makeComposer(typing: "xr", buffersSentence: true)
+    _ = composer.handle(.space)
+    #expect(composer.selectCandidate(at: 0) == .commit("选中"))
+}
+
+@Test @MainActor func enterCommitsPendingText() {
+    var (composer, _) = makeComposer(typing: "xr", buffersSentence: true)
+    _ = composer.handle(.space)
+    type("xr", into: &composer)
+    _ = composer.handle(.right)
+    #expect(composer.handle(.enter) == .commit("选中旋转"))
+    #expect(!composer.isComposing)
+
+    (composer, _) = makeComposer(typing: "xr")
+    #expect(composer.handle(.enter) == .commit("选中"))
+}
+
+@Test @MainActor func bufferedSentenceEditing() {
+    var (composer, _) = makeComposer(typing: "xr", buffersSentence: true)
+    _ = composer.handle(.space)
+    #expect(composer.handle(.character("，")) == .update)
+    #expect(composer.handle(.character("1")) == .update)
+    #expect(composer.markedText == "选中，1")
+    _ = composer.handle(.backspace)
+    _ = composer.handle(.backspace)
+    #expect(composer.markedText == "选中")
+    _ = composer.handle(.backspace)
+    #expect(composer.handle(.backspace) == .cancel)
+    #expect(!composer.isComposing)
+}
+
+@Test @MainActor func idlePunctuationStillCommitsDirectly() {
+    var (composer, _) = makeComposer(typing: "", buffersSentence: true)
+    #expect(composer.handle(.character("，")) == .commit("，"))
+}
+
+@Test @MainActor func bufferedSentenceTranslationRowAndEscape() {
+    var (composer, _) = makeComposer(typing: "xr", buffersSentence: true)
+    _ = composer.handle(.space)
+    _ = composer.handle(.down)
+    #expect(composer.focus == .translation)
+    #expect(composer.handle(.enter) == .commitTranslation)
+    _ = composer.handle(.escape)
+    #expect(composer.focus == .candidates)
+    #expect(composer.handle(.escape) == .cancel)
+    #expect(!composer.isComposing)
+}
+
+@Test @MainActor func forceCommitIncludesSentence() {
+    var (composer, _) = makeComposer(typing: "xr", buffersSentence: true)
+    _ = composer.handle(.space)
+    type("xr", into: &composer)
+    #expect(composer.rawInput == "选中xr")
+    #expect(composer.forceCommitText() == "选中xr")
 }
