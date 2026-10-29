@@ -1,4 +1,4 @@
-# YiKey 译键 — 实时翻译输入法（macOS）
+# Qingniao 青鸟 — 实时翻译输入法（macOS）
 
 ## 目标
 
@@ -87,7 +87,7 @@ schema 名称已对照 [rime-ice 仓库](https://github.com/iDvel/rime-ice) 根�
 - 双拼时，marked text 显示 rime 转写后的**全拼**（如键入 `xrvs` 显示 `xuan zhong`），方便核对；由 schema 的 `preedit_format` 实现
 - 切换方案只影响按键到拼音的解析，候选、翻译、焦点模型完全不变；切换时调用 `select_schema`，不重启进程
 - `Resources/rime/default.custom.yaml` 补丁：只部署上表 7 个方案（加反查用的 `pinyin_simp`）、每页 6 个候选。启动时同步到用户目录
-- 用户目录 `~/Library/Application Support/YiKey/rime`（用户词频、编译产物），rime 日志在 `~/Library/Logs/YiKey`
+- 用户目录 `~/Library/Application Support/Qingniao/rime`（用户词频、编译产物），rime 日志在 `~/Library/Logs/Qingniao`
 - **词典在线更新**（`DictionaryUpdater`）：后台自动进行，**没有设置项和界面**。激活输入法时距上次检查（UserDefaults `dictionaryLastCheck`）超过 24h 就检查并安装，失败只记日志、第二天再试；装好后下次激活时候选窗提示「词库已更新」
   - 只更新雾凇的 `cn_dicts`（nightly 发布的 `cn_dicts.zip`，约 14MB，有 sha256 校验），**不更新方案和 lua**，避免与 App 内的方案、librime 版本不兼容；五笔不在线更新
   - 解压到用户目录 `cn_dicts/`，rime 优先读用户目录，覆盖 App 自带的同名词典；然后 `RimeRuntime.redeploy()`（清掉所有 session 后重新部署，约 10s，期间提示「词库部署中」）
@@ -126,7 +126,7 @@ schema 名称已对照 [rime-ice 仓库](https://github.com/iDvel/rime-ice) 根�
 - 正在输入时按 Shift：把**原样按键**上屏后进入直接英文（拼音模式误打的英文单词可以这样直接出；双拼时上屏的是双拼字母）
 - 状态在所有 App 间共享，不持久化，输入法进程重启后回到翻译模式
 - 已知限制：按住 Shift 点鼠标（如 Shift+点击选区）且很快松开，也可能被识别为单按 Shift
-- 「使用大写锁定键切换"ABC"输入法」开着也不影响：实测（2026-10-28，macOS 27）Caps Lock 先交给当前输入法，译键处理后系统不再切到 ABC。文档里只作为切走时的排查提示
+- 「使用大写锁定键切换"ABC"输入法」开着也不影响：实测（2026-10-28，macOS 27）Caps Lock 先交给当前输入法，青鸟处理后系统不再切到 ABC。文档里只作为切走时的排查提示
 
 中→外模式空闲时（没有在输入），按键全部交给 rime：字母开始输入，标点转成中文标点直接上屏。`Tab` 在雾凇里原本是"跳到下一个拼音"，这里被改成进入译文行。
 
@@ -173,7 +173,7 @@ schema 名称已对照 [rime-ice 仓库](https://github.com/iDvel/rime-ice) 根�
 ## 架构
 
 ```
-YiKey/
+Qingniao/
 ├── CLAUDE.md
 ├── Package.swift
 ├── Makefile                      # build / install / uninstall / log / test
@@ -190,10 +190,10 @@ YiKey/
 │   ├── bundle_dylibs.sh          # make dist：Homebrew dylib 拷进 Contents/Frameworks 并改为 @rpath
 │   └── install.sh                # 随分发包附带的安装脚本
 ├── Sources/CRime/                # librime 头文件的 Swift 模块（pkg-config: rime）
-├── Sources/YiKeyCore/         # 纯逻辑库，Swift 6 严格并发，可单测
+├── Sources/QingniaoCore/         # 纯逻辑库，Swift 6 严格并发，可单测
 │   ├── Composer.swift            # 输入状态机 + ConversionEngine 协议：候选 → 待提交文本 → 译文，持有焦点和句子缓冲
 │   └── TranslationCache.swift    # 译文 LRU 缓存
-├── Sources/YiKey/             # 可执行 target（Swift 5 语言模式，见注意事项）
+├── Sources/Qingniao/             # 可执行 target（Swift 5 语言模式，见注意事项）
 │   ├── main.swift                # 启动 IMKServer
 │   ├── Log.swift                 # os.Logger
 │   ├── InputController.swift     # IMKInputController 子类：按键分发、marked text、提交、翻译调度
@@ -207,7 +207,7 @@ YiKey/
 │   └── Settings/
 │       ├── Preferences.swift     # 输入方案（UserDefaults）
 │       └── SettingsWindow.swift  # SwiftUI 设置窗口：输入方案、语言包状态/下载、快捷键说明
-└── Tests/YiKeyCoreTests/
+└── Tests/QingniaoCoreTests/
     ├── ComposerTests.swift       # 外→中
     ├── PinyinComposerTests.swift # 中→外，用 FakeEngine 模拟 rime
     └── TranslationCacheTests.swift
@@ -222,15 +222,15 @@ YiKey/
 
 ### Info.plist 必需键
 
-- `InputMethodConnectionName`：`YiKey_Connection`
-- `InputMethodServerControllerClass`：`YiKeyInputController`（Swift 类用 `@objc(YiKeyInputController)` 固定 ObjC 名，避免模块名修饰）
+- `InputMethodConnectionName`：`Qingniao_Connection`
+- `InputMethodServerControllerClass`：`QingniaoInputController`（Swift 类用 `@objc(QingniaoInputController)` 固定 ObjC 名，避免模块名修饰）
 - `TISIntendedLanguage`：`zh-Hans`（出现在「简体中文」分类下）
 - 只设 `LSUIElement`，**不设 `LSBackgroundOnly`**：后者会让设置窗口无法正常激活
 - `tsInputMethodCharacterRepertoireKey`：`["Hans", "Latn"]`
 - `tsInputMethodIconFileKey`
-- Bundle ID 必须包含 `.inputmethod.`，如 `com.owen.inputmethod.YiKey`
-- 输入法菜单里的名字取自 `Resources/{en,zh-Hans}.lproj/InfoPlist.strings` 的 `CFBundleName`（英文系统显示 YiKey，中文系统显示 译键）；只改 Info.plist 的 `CFBundleDisplayName` 不生效
-- 2026-10-27 由 TransIME 改名为 YiKey：Bundle ID、ObjC 类名、用户目录、UserDefaults 域都随之变化，系统会视为新输入法
+- Bundle ID 必须包含 `.inputmethod.`，如 `com.owen.inputmethod.Qingniao`
+- 输入法菜单里的名字取自 `Resources/{en,zh-Hans}.lproj/InfoPlist.strings` 的 `CFBundleName`（英文系统显示 Qingniao，中文系统显示 青鸟）；只改 Info.plist 的 `CFBundleDisplayName` 不生效
+- 2026-10-27 由 TransIME 改名为 YiKey（译键），2026-10-29 再改名为 Qingniao（青鸟）：Bundle ID、ObjC 类名、用户目录、UserDefaults 域都随之变化，系统会视为新输入法。代码里没有迁移逻辑，本机旧数据是手动拷过来的（`~/Library/Application Support/YiKey` → `Qingniao`，`defaults export/import` 换域名）
 
 ---
 
@@ -279,19 +279,19 @@ YiKey/
 ## 常用命令
 
 ```bash
-make build        # swift build -c release 并组装 YiKey.app
+make build        # swift build -c release 并组装 Qingniao.app
 make install      # 拷贝到 ~/Library/Input Methods/ 并重启进程
-make log          # log stream，subsystem = com.owen.inputmethod.YiKey
+make log          # log stream，subsystem = com.owen.inputmethod.Qingniao
 make uninstall
-make dist         # 打包分发版 build/YiKey-<版本>.zip（自带 librime 等依赖），对方解压后 bash install.sh
+make dist         # 打包分发版 build/Qingniao-<版本>.zip（自带 librime 等依赖），对方解压后 bash install.sh
 make test         # Swift Testing 单元测试（不要直接 swift test，CLT 环境找不到 Testing 模块）
 ```
 
 首次安装后需：
-1. **系统设置 → 键盘 → 输入法 → + → 简体中文 → 译键**
+1. **系统设置 → 键盘 → 输入法 → + → 简体中文 → 青鸟**
 2. **系统设置 → 通用 → 语言与地区 → 翻译语言**：下载「英语」和「简体中文」离线语言包（未下载时译文行显示提示）
 
-`make install` 会先 `killall YiKey`，下次切换到该输入法时自动加载新版本，一般无需注销。
+`make install` 会先 `killall Qingniao`，下次切换到该输入法时自动加载新版本，一般无需注销。
 
 ### 分发（make dist）
 
@@ -306,7 +306,7 @@ make test         # Swift Testing 单元测试（不要直接 swift test，CLT �
 
 - 输入法进程崩溃会导致当前 App 无法输入：开发时保留系统自带输入法，用 `Ctrl+Space` 切回
 - IMKit 回调在主线程，翻译、librime 调用不能阻塞主线程；UI 更新回到 `@MainActor`
-- IMKit / Translation 的 SDK 类型没有 Sendable 标注，Swift 6 严格模式会误报 data race，所以 `YiKey` target 用 Swift 5 语言模式；`InputController` 标 `@MainActor`，IMKit 覆写方法标 `nonisolated` 后用 `MainActor.assumeIsolated` 进入主线程。业务逻辑放 `YiKeyCore`，保持 Swift 6 严格检查
+- IMKit / Translation 的 SDK 类型没有 Sendable 标注，Swift 6 严格模式会误报 data race，所以 `Qingniao` target 用 Swift 5 语言模式；`InputController` 标 `@MainActor`，IMKit 覆写方法标 `nonisolated` 后用 `MainActor.assumeIsolated` 进入主线程。业务逻辑放 `QingniaoCore`，保持 Swift 6 严格检查
 - `client` 对象只在当前输入会话内有效，异步回调里提交文本前要确认会话未切换
 - 密码输入框（Secure Input）中系统会禁用第三方输入法，属正常行为
 - 日志用 `os.Logger`（subsystem = bundle ID），不要 `print`

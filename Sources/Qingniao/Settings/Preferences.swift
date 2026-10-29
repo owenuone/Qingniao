@@ -1,5 +1,5 @@
 import Foundation
-import YiKeyCore
+import QingniaoCore
 
 struct PinyinScheme {
     let id: String

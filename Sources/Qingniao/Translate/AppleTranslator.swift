@@ -1,6 +1,6 @@
 import Foundation
 import Translation
-import YiKeyCore
+import QingniaoCore
 
 enum TranslatorError: LocalizedError {
     case languageNotInstalled

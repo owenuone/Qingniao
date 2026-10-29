@@ -112,7 +112,7 @@ final class DictionaryUpdater {
         // 异步 download 的临时文件不会自动删除
         defer { try? FileManager.default.removeItem(at: file) }
         try checkStatus(response)
-        let workDir = FileManager.default.temporaryDirectory.appendingPathComponent("YiKey-dict-\(UUID().uuidString)")
+        let workDir = FileManager.default.temporaryDirectory.appendingPathComponent("Qingniao-dict-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: workDir, withIntermediateDirectories: true)
         try await Task.detached {
             if let digest = asset.digest {

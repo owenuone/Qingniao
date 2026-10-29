@@ -1,6 +1,6 @@
 import Testing
 
-@testable import YiKeyCore
+@testable import QingniaoCore
 
 @MainActor
 private func type(_ text: String, into composer: inout Composer) {

@@ -7,5 +7,5 @@ guard let connectionName = Bundle.main.infoDictionary?["InputMethodConnectionNam
 
 MainActor.assumeIsolated { RimeRuntime.shared.start() }
 let server = IMKServer(name: connectionName, bundleIdentifier: Bundle.main.bundleIdentifier)
-log.info("YiKey 已启动")
+log.info("Qingniao 已启动")
 NSApplication.shared.run()

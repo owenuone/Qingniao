@@ -1,6 +1,6 @@
 import CRime
 import Foundation
-import YiKeyCore
+import QingniaoCore
 
 let rimeAPI = rime_get_api()!.pointee
 
@@ -19,7 +19,7 @@ final class RimeRuntime {
     private var initialized = false
 
     static let userDataURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("YiKey/rime", isDirectory: true)
+        .appendingPathComponent("Qingniao/rime", isDirectory: true)
 
     func start() {
         guard !started else { return }
@@ -30,7 +30,7 @@ final class RimeRuntime {
             return
         }
         let sharedData = resources.appendingPathComponent("rime-data", isDirectory: true)
-        let logDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/YiKey")
+        let logDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Qingniao")
         do {
             try FileManager.default.createDirectory(at: Self.userDataURL, withIntermediateDirectories: true)
             try FileManager.default.createDirectory(at: logDir, withIntermediateDirectories: true)
@@ -47,11 +47,11 @@ final class RimeRuntime {
         traits.shared_data_dir = UnsafePointer(strdup(sharedData.path))
         traits.user_data_dir = UnsafePointer(strdup(Self.userDataURL.path))
         traits.log_dir = UnsafePointer(strdup(logDir.path))
-        traits.distribution_name = UnsafePointer(strdup("YiKey"))
-        traits.distribution_code_name = UnsafePointer(strdup("YiKey"))
+        traits.distribution_name = UnsafePointer(strdup("Qingniao"))
+        traits.distribution_code_name = UnsafePointer(strdup("Qingniao"))
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
         traits.distribution_version = UnsafePointer(strdup(version))
-        traits.app_name = UnsafePointer(strdup("rime.yikey"))
+        traits.app_name = UnsafePointer(strdup("rime.qingniao"))
         traits.min_log_level = 1
 
         rimeAPI.setup(&traits)

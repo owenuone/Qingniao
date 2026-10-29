@@ -1,7 +1,7 @@
-APP_NAME    := YiKey
+APP_NAME    := Qingniao
 APP         := build/$(APP_NAME).app
 INSTALL_DIR := $(HOME)/Library/Input Methods
-RIME_USER   := $(HOME)/Library/Application Support/YiKey/rime
+RIME_USER   := $(HOME)/Library/Application Support/Qingniao/rime
 # 用 = 延迟求值，只有 make install 才调用 brew
 RIME_DEPLOY  = $(shell brew --prefix librime)/bin/rime_deployer
 # 雾凇拼音固定版本，升级时改这里后执行 make clean-vendor build
@@ -100,7 +100,7 @@ uninstall:
 	rm -rf "$(INSTALL_DIR)/$(APP_NAME).app"
 
 log:
-	log stream --level debug --predicate 'subsystem == "com.owen.inputmethod.YiKey"'
+	log stream --level debug --predicate 'subsystem == "com.owen.inputmethod.Qingniao"'
 
 test:
 	swift test $(TEST_FLAGS)

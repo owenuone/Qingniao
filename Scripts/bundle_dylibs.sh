@@ -4,7 +4,7 @@
 set -euo pipefail
 
 app="$1"
-exe="$app/Contents/MacOS/YiKey"
+exe="$app/Contents/MacOS/Qingniao"
 frameworks="$app/Contents/Frameworks"
 plugins="$frameworks/rime-plugins"
 rime_lib="$(brew --prefix librime)/lib"

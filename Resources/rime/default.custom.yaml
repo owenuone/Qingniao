@@ -1,4 +1,4 @@
-# YiKey 对雾凇 default.yaml 的补丁：只部署用到的方案（含极点五笔 86），每页 6 个候选
+# Qingniao 对雾凇 default.yaml 的补丁：只部署用到的方案（含极点五笔 86），每页 6 个候选
 patch:
   schema_list:
     - schema: rime_ice

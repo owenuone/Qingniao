@@ -5,23 +5,23 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>译键</string>
+	<string>青鸟</string>
 	<key>CFBundleExecutable</key>
-	<string>YiKey</string>
+	<string>Qingniao</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.owen.inputmethod.YiKey</string>
+	<string>com.owen.inputmethod.Qingniao</string>
 	<key>CFBundleName</key>
-	<string>YiKey</string>
+	<string>Qingniao</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
 	<key>CFBundleVersion</key>
-	<string>3</string>
+	<string>4</string>
 	<key>InputMethodConnectionName</key>
-	<string>YiKey_Connection</string>
+	<string>Qingniao_Connection</string>
 	<key>InputMethodServerControllerClass</key>
-	<string>YiKeyInputController</string>
+	<string>QingniaoInputController</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>26.0</string>
 	<key>LSUIElement</key>

@@ -1,5 +1,5 @@
 import AppKit
-import YiKeyCore
+import QingniaoCore
 
 struct CandidatePanelModel {
     var candidates: [String] = []

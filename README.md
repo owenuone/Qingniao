@@ -1,4 +1,4 @@
-# YiKey 译键
+# Qingniao 青鸟
 
 一个 macOS 输入法：边打字边翻译。打拼音时，候选窗第一行是候选词，第二行是当前候选的实时译文，选哪一行就上屏哪一行。
 
@@ -33,8 +33,8 @@
 
 ```bash
 brew install librime
-git clone https://github.com/owenuone/YiKey.git
-cd YiKey
+git clone https://github.com/owenuone/Qingniao.git
+cd Qingniao
 make install
 ```
 
@@ -46,11 +46,11 @@ make install
 make dist
 ```
 
-生成 `build/YiKey-<版本>.zip`，librime 及其依赖已打包进 App。对方解压后运行 `bash install.sh` 即可（仅支持 Apple Silicon、macOS 27 及以上；App 未经公证，安装脚本会去掉隔离标记）。
+生成 `build/Qingniao-<版本>.zip`，librime 及其依赖已打包进 App。对方解压后运行 `bash install.sh` 即可（仅支持 Apple Silicon、macOS 27 及以上；App 未经公证，安装脚本会去掉隔离标记）。
 
 ### 安装后
 
-1. **添加输入法**：系统设置 → 键盘 → 输入法 → 编辑 → `+` → 简体中文 → **YiKey**（中文系统下显示为「译键」）
+1. **添加输入法**：系统设置 → 键盘 → 输入法 → 编辑 → `+` → 简体中文 → **Qingniao**（中文系统下显示为「青鸟」）
 2. **下载离线语言包**：菜单栏输入法图标 → 设置… → 翻译语言，点击「下载」；也可以在 系统设置 → 通用 → 语言与地区 → 翻译语言 中下载
 
 如果按 Caps Lock 会切到 ABC 而不是切换翻译方向，在输入法编辑界面关闭「使用大写锁定键切换"ABC"输入法」。
@@ -86,15 +86,15 @@ make dist
 
 ```bash
 make uninstall
-rm -rf ~/Library/Application\ Support/YiKey ~/Library/Logs/YiKey
+rm -rf ~/Library/Application\ Support/Qingniao ~/Library/Logs/Qingniao
 ```
 
-然后在 系统设置 → 键盘 → 输入法 中移除 YiKey。
+然后在 系统设置 → 键盘 → 输入法 中移除 Qingniao。
 
 ## 开发
 
 ```bash
-make build      # 编译并组装 build/YiKey.app
+make build      # 编译并组装 build/Qingniao.app
 make install    # 安装并重启输入法进程
 make test       # 运行单元测试
 make dist       # 打包自带依赖的分发版

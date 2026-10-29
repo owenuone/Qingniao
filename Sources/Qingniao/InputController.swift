@@ -1,10 +1,10 @@
 import AppKit
 import InputMethodKit
-import YiKeyCore
+import QingniaoCore
 
 /// IMKit 在主线程回调，但 SDK 未标注 actor 隔离，所以覆写方法标 nonisolated 再断言回主线程。
 @MainActor
-@objc(YiKeyInputController)
+@objc(QingniaoInputController)
 final class InputController: IMKInputController {
     private static let debounce: Duration = .milliseconds(250)
     private static let commitWaitTimeout: Duration = .seconds(1)

@@ -1,6 +1,6 @@
 import Testing
 
-@testable import YiKeyCore
+@testable import QingniaoCore
 
 /// 模拟 rime：字母追加到输入，空格选中高亮候选并上屏，Esc 清空。
 @MainActor

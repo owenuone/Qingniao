@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 import Translation
-import YiKeyCore
+import QingniaoCore
 
 @MainActor
 final class SettingsWindowController {
@@ -35,7 +35,7 @@ final class SettingsWindowController {
             backing: .buffered,
             defer: true
         )
-        window.title = "译键设置"
+        window.title = "青鸟设置"
         // 标题栏透明，毛玻璃背景延伸到标题栏下面
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
@@ -200,7 +200,7 @@ private struct SettingsView: View {
                 .frame(width: 44, height: 44)
                 .background(Color.accentColor.gradient, in: Circle())
             VStack(alignment: .leading, spacing: 2) {
-                Text("译键").font(.title2.bold())
+                Text("青鸟").font(.title2.bold())
                 Text("实时翻译输入法 · 版本 \(Self.version)")
                     .font(.callout)
                     .foregroundStyle(.secondary)

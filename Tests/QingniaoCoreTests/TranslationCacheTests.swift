@@ -1,6 +1,6 @@
 import Testing
 
-@testable import YiKeyCore
+@testable import QingniaoCore
 
 @Test func cacheHitAndMiss() {
     var cache = TranslationCache(capacity: 2)
