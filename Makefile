@@ -2,6 +2,11 @@ APP_NAME    := Qingniao
 APP         := build/$(APP_NAME).app
 INSTALL_DIR := $(HOME)/Library/Input Methods
 RIME_USER   := $(HOME)/Library/Application Support/Qingniao/rime
+# CLT 27.0（2026-10）的 SDK 把 SwiftUI @State 改成宏，却没带 SwiftUIMacros 插件，编译失败；暂用 26.5 SDK
+SDK_26_5    := /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk
+ifneq ($(wildcard $(SDK_26_5)),)
+export SDKROOT ?= $(SDK_26_5)
+endif
 # 用 = 延迟求值，只有 make install 才调用 brew
 RIME_DEPLOY  = $(shell brew --prefix librime)/bin/rime_deployer
 # 雾凇拼音固定版本，升级时改这里后执行 make clean-vendor build
@@ -23,7 +28,8 @@ WUBI06       := vendor/rime-wubi06
 CLT_DEV     := /Library/Developer/CommandLineTools/Library/Developer
 # 只装了 Command Line Tools 时，Swift Testing 不在默认搜索路径
 TEST_FLAGS  := -Xswiftc -F$(CLT_DEV)/Frameworks -Xlinker -F$(CLT_DEV)/Frameworks \
-               -Xlinker -rpath -Xlinker $(CLT_DEV)/Frameworks -Xlinker -rpath -Xlinker $(CLT_DEV)/usr/lib
+               -Xlinker -rpath -Xlinker $(CLT_DEV)/Frameworks -Xlinker -rpath -Xlinker $(CLT_DEV)/usr/lib \
+               -Xswiftc -plugin-path -Xswiftc /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing
 
 VERSION     := $(shell /usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' Resources/Info.plist)
 DIST        := build/dist/$(APP_NAME)

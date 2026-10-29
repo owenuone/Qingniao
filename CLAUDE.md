@@ -32,6 +32,7 @@
 | 候选窗 | 自定义 `NSPanel`（non-activating） | 系统 `IMKCandidates` 不支持「候选行 + 译文行」布局和点击回调 |
 | 构建 | SwiftPM + `Makefile` 打包成 `.app` | 不依赖 Xcode，只需 Command Line Tools |
 | 测试 | Swift Testing | CLT 环境需额外 `-F`/`-rpath`，已封装在 `make test` |
+| SDK | MacOSX26.5.sdk | CLT 27.0 的 SDK 里 `@State` 是宏但缺 `SwiftUIMacros` 插件，Makefile 固定 `SDKROOT` 到 26.5（2026-10-29）；CLT 修复后可去掉 |
 
 ---
 
